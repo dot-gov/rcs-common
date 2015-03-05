@@ -3,7 +3,7 @@ require 'rcs-common/signature'
 
 class TestSignature
   include Mongoid::Document
-  include RCS::Mongoid::Signature
+  include RCS::Signature
 
   field :name, type: String
   field :surname, type: String
@@ -14,7 +14,7 @@ class TestSignature
   sign_options :include => [:name, :surname, :code, :complex]
 end
 
-describe RCS::Mongoid::Signature do
+describe RCS::Signature do
 
   describe '.included' do
 

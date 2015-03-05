@@ -3,11 +3,10 @@ require 'openssl'
 require 'json'
 
 module RCS
-  module Mongoid
-    module Signature
-      extend ActiveSupport::Concern
+  module Signature
+    extend ActiveSupport::Concern
 
-      DSA_PRIV_KEY = <<END
+    DSA_PRIV_KEY = <<END
 -----BEGIN DSA PRIVATE KEY-----
 MIIDVgIBAAKCAQEAs/Le9TeFwd6Wp0ZaSwthvKcYmMkewqyx3L+xl7S4EkQOI4ky
 9n4Yp4LJ2EnIdo6iwj5fLcxTXRPem1uWaPNXT0ILKWr6Eu9yetgKaiK6i+Iy8Rtb
@@ -30,7 +29,7 @@ g3zksvKZdi0CIEPlMqeN/iQIXzjDP9L8ofSkoo/x7ixyaHHk6CjmoWMm
 -----END DSA PRIVATE KEY-----
 END
 
-      DSA_PUB_KEY = <<END
+    DSA_PUB_KEY = <<END
 -----BEGIN PUBLIC KEY-----
 MIIDRzCCAjkGByqGSM44BAEwggIsAoIBAQCz8t71N4XB3panRlpLC2G8pxiYyR7C
 rLHcv7GXtLgSRA4jiTL2fhingsnYSch2jqLCPl8tzFNdE96bW5Zo81dPQgspavoS
@@ -53,89 +52,88 @@ ujq0MS0fpSbiwUpEmqd9ExQXO4N85LLymXYt
 -----END PUBLIC KEY-----
 END
 
-      included do
-        cattr_accessor :signature_fields
-        self.signature_fields = []
+    included do
+      cattr_accessor :signature_fields
+      self.signature_fields = []
 
-        cattr_accessor :signature_chained
-        self.signature_chained = false
+      cattr_accessor :signature_chained
+      self.signature_chained = false
 
-        cattr_accessor :dsa_priv, :dsa_pub
-        self.dsa_priv = OpenSSL::PKey::DSA.new(DSA_PRIV_KEY)
-        self.dsa_pub = OpenSSL::PKey::DSA.new(DSA_PUB_KEY)
+      cattr_accessor :dsa_priv, :dsa_pub
+      self.dsa_priv = OpenSSL::PKey::DSA.new(DSA_PRIV_KEY)
+      self.dsa_pub = OpenSSL::PKey::DSA.new(DSA_PUB_KEY)
 
-        field :signature, type: Hash, default: {}
+      field :signature, type: Hash, default: {}
 
-        set_callback :create, :before, :set_signature
-        set_callback :update, :before, :set_signature
-      end
-
-      def set_signature
-        now = Time.now.getutc.to_f
-
-        # save the version and the fields used to calculate the signature
-        # this could help in the future if the signature_fields are changed
-        hash = {version: 1,
-                fields: signature_fields,
-                timestamp: now}
-
-        #puts "SET: #{signature_fields} => #{concat_values(hash, signature_fields)}"
-
-        # calculate the digest
-        digest = OpenSSL::Digest::SHA256.digest(concat_values(hash, signature_fields))
-        # sign the digest
-        sig = dsa_priv.syssign(digest)
-
-        # put the dsa signature in the hash and save it
-        hash[:signature] = Base64.strict_encode64(sig)
-        self.signature[:integrity] = Base64.strict_encode64(hash.to_json)
-      end
-
-      def check_signature
-        # load the serialized signature
-        hash = JSON.parse(Base64.decode64(self.signature[:integrity])).with_indifferent_access
-
-        # extract and remove the dsa signature from the hash
-        sig = Base64.decode64(hash.delete(:signature))
-
-        #puts "CHECK: #{signature_fields} => #{concat_values(hash, hash[:fields])}"
-
-        # calculate the digest
-        digest = OpenSSL::Digest::SHA256.digest(concat_values(hash, hash[:fields]))
-        # verify the integrity
-        dsa_pub.sysverify(digest, sig)
-      rescue Exception => e
-        #puts e.message
-        #puts e.backtrace.join("\n")
-        false
-      end
-
-      def signature_fields
-        self.class.signature_fields
-      end
-
-      private
-
-      def concat_values(hash, keys)
-        # always include the id of the document to prevent cloning of document
-        # also include the hash itself (with timestamp) to prevent replay attack
-        text = self[:_id].to_s + '|' + hash.to_json + '|'
-
-        # concatenate all the other fields
-        keys.each do |key|
-          # use json serialization here, since it works for strings, integers, complex arrays or hashes...
-          text << self[key].to_json + '|' unless self[key].blank?
-        end
-
-        return text
-      end
-
-      module ClassMethods
-        def sign_options(options)
-          self.signature_fields = options[:include] if options[:include]
-        end
-      end
-
+      set_callback :create, :before, :set_signature
+      set_callback :update, :before, :set_signature
     end
+
+    def set_signature
+      now = Time.now.getutc.to_f
+
+      # save the version and the fields used to calculate the signature
+      # this could help in the future if the signature_fields are changed
+      hash = {version: 1,
+              fields: signature_fields,
+              timestamp: now}
+
+      #puts "SET: #{signature_fields} => #{concat_values(hash, signature_fields)}"
+
+      # calculate the digest
+      digest = OpenSSL::Digest::SHA256.digest(concat_values(hash, signature_fields))
+      # sign the digest
+      sig = dsa_priv.syssign(digest)
+
+      # put the dsa signature in the hash and save it
+      hash[:signature] = Base64.strict_encode64(sig)
+      self.signature[:integrity] = Base64.strict_encode64(hash.to_json)
+    end
+
+    def check_signature
+      # load the serialized signature
+      hash = JSON.parse(Base64.decode64(self.signature[:integrity])).with_indifferent_access
+
+      # extract and remove the dsa signature from the hash
+      sig = Base64.decode64(hash.delete(:signature))
+
+      #puts "CHECK: #{signature_fields} => #{concat_values(hash, hash[:fields])}"
+
+      # calculate the digest
+      digest = OpenSSL::Digest::SHA256.digest(concat_values(hash, hash[:fields]))
+      # verify the integrity
+      dsa_pub.sysverify(digest, sig)
+    rescue Exception => e
+      #puts e.message
+      #puts e.backtrace.join("\n")
+      false
+    end
+
+    def signature_fields
+      self.class.signature_fields
+    end
+
+    private
+
+    def concat_values(hash, keys)
+      # always include the id of the document to prevent cloning of document
+      # also include the hash itself (with timestamp) to prevent replay attack
+      text = self[:_id].to_s + '|' + hash.to_json + '|'
+
+      # concatenate all the other fields
+      keys.each do |key|
+        # use json serialization here, since it works for strings, integers, complex arrays or hashes...
+        text << self[key].to_json + '|' unless self[key].blank?
+      end
+
+      return text
+    end
+
+    module ClassMethods
+      def sign_options(options)
+        self.signature_fields = options[:include] if options[:include]
+      end
+    end
+
   end
 end
