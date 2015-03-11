@@ -70,6 +70,7 @@ module RCS
         alias :tell :file_position
         alias :position :file_position
         alias :pos :file_position
+        alias :size :file_length
 
         private
 
