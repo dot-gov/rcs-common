@@ -3,7 +3,7 @@ require 'openssl'
 require 'json'
 
 module RCS
-  module Signature
+  module SignedDocument
     extend ActiveSupport::Concern
 
     DSA_PRIV_KEY = <<END
@@ -104,7 +104,7 @@ END
       # verify the integrity
       dsa_pub.sysverify(digest, sig)
     rescue Exception => e
-      #puts e.message
+      puts e.message
       #puts e.backtrace.join("\n")
       false
     end
