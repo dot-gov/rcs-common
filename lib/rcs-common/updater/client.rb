@@ -144,9 +144,7 @@ module RCS
       end
 
       def service_exists?(name)
-        cmd = "SC QUERY #{name} | find \"STATE\""
-        resp = localhost? ? local_command(cmd) : request(cmd, exec: 1)
-        return resp[:output].strip.size > 0
+        !!execute("SC QUERY #{name}")
       end
 
       def registry_add(key_path, value_name, value_data)
@@ -353,19 +351,4 @@ module RCS
       end
     end
   end
-end
-
-
-if __FILE__ == $0 and ENV['DEVELOPMENT']
-  ENV['SIGNATURE'] = '2433e2d6865e4e9a15ee57f74a196470'
-  # client = RCS::Updater::Client.new('192.168.71.226')
-  # client = RCS::Updater::Client.new('localhost')
-  address = '192.168.71.143'
-  client = RCS::Updater::Client.new(address)
-
-  # client.store_folder("/Users/danielemolteni/ht/rcs-collector/lib", "#{client.instdir}/Collector/lib")
-
-  # client.
-  require 'pry'
-  binding.pry
 end
