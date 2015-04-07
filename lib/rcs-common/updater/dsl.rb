@@ -1,7 +1,7 @@
 require_relative 'client'
 require 'ostruct'
 
-class SafeOpenStruct < OpenStruct
+class LazyOpenStruct < OpenStruct
   def method_missing(meth, *args)
     n = meth.to_s
 
@@ -14,12 +14,24 @@ class SafeOpenStruct < OpenStruct
 
     super
   end
+
+  def new_ostruct_member(name)
+    name = name.to_sym
+    unless respond_to?(name)
+      define_singleton_method(name) do
+        value = @table[name]
+        return value.respond_to?(:call) ? value.call : value
+      end
+      define_singleton_method("#{name}=") { |x| modifiable[name] = x }
+    end
+    name
+  end
 end
 
 module RCS
   module Updater
     module DSL
-      @@settings = SafeOpenStruct.new
+      @@settings = LazyOpenStruct.new
       @@tasks = {}
       @@descriptions = {}
       @@last_description = nil
@@ -151,7 +163,7 @@ module RCS
       #   params.param3?     #=> nil
       def params
         return @@params if defined?(@@params)
-        @@params = SafeOpenStruct.new
+        @@params = LazyOpenStruct.new
         i = 0
 
         loop do
