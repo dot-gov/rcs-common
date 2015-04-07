@@ -7,6 +7,15 @@ module RCS
       @@dns_cache ||= {}
     end
 
+    def resolve_to_localhost?(name, options = {})
+      if name == 'localhost' or name == '127.0.0.1'
+        return true
+      else
+        address = resolve_dns(name, options) rescue nil
+        return address == '127.0.0.1'
+      end
+    end
+
     def resolve_dns(dns, use_cache: false)
       if use_cache and resolved_dns_cache[dns]
         return resolved_dns_cache[dns]

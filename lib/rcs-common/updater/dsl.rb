@@ -126,7 +126,7 @@ module RCS
 
       def echo(message)
         message = "[echo]#{echo_indent}#{message}"
-        message << " (#{self.address})" if self.respond_to?(:address) and echo_indent.empty? and !resolve_to_localhost?(self.address)
+        message << " (#{self.address})" if self.respond_to?(:address) and echo_indent.empty? and !self.localhost?
         $stdout.puts(message)
         $stdout.flush
       end
@@ -142,11 +142,6 @@ module RCS
         $stdout.puts("[insu]#{node_type.to_s.capitalize} node on #{addr || address}")
         $stdout.flush
       end
-
-      def resolve_to_localhost?(name)
-        Client.resolve_to_localhost?(name)
-      end
-
       # Access to parameters passed via command line.
       #
       # @example Script is called with --first-param "test" --param2
