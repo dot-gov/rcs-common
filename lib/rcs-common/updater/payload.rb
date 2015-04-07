@@ -51,7 +51,12 @@ module RCS
         Timeout::timeout(@timeout) do
           trace(:debug, "Timeout has been set to #{@timeout} sec") if @timeout != DEFAULT_TIMEOUT
 
-          trace(:debug, "[popen] #{cmd}")
+          # Mask passwords
+          masked_cmd = cmd.dup
+          masked_cmd.gsub!(/(pwd:\s*)("|')(\w+)("|')/, '\1\2***\4')
+          masked_cmd.gsub!(/(.+)\s(-p|--pass)\s(\w+)(.*)/, '\1 \2 ***\4')
+
+          trace(:debug, "[popen] #{masked_cmd}")
 
           Open3.popen2e(cmd) do |stdin, std_out_err, wait_thr|
               while line = std_out_err.gets
