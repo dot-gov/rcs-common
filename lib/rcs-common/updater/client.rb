@@ -5,6 +5,11 @@ require 'timeout'
 require 'digest/md5'
 require 'base64'
 
+begin
+  require 'win32/registry'
+rescue LoadError
+end
+
 require_relative "../trace.rb"
 require_relative "shared_key"
 require_relative "tmp_dir"
@@ -141,6 +146,42 @@ module RCS
         !!execute("SC QUERY #{name}")
       end
 
+      def mongo_eval_no_auth_fallback(uri, javascript)
+        if result = mongo_eval(uri, javascript)
+          return result
+        else
+          return mongo_eval_no_auth(uri, javascript)
+        end
+      end
+
+      def mongo_eval_no_auth(uri, javascript)
+        mongo_eval(uri, javascript, user: nil, pass: nil)
+      end
+
+      def mongo_eval(uri, javascript, user: settings.mongo_user, pass: settings.mongo_pass, instdir: settings.instdir)
+        params = ["-u", user, "-p", pass].join(" ") if user and pass
+
+        addr, db_name = *uri.split("/")
+        uri = "#{addr}/admin"
+        db_name ||= 'admin'
+
+        cmd = "#{instdir}\\DB\\mongodb\\win\\mongo.exe #{uri} #{params} --eval db=db.getSiblingDB('#{db_name}');#{javascript}"
+
+        return execute(cmd)
+      end
+
+      def service_config_info(service_name, attribute_name)
+        key = "SYSTEM\\CurrentControlSet\\services\\#{service_name}"
+        reg = Win32::Registry::HKEY_LOCAL_MACHINE.open(key)
+        reg_typ, reg_val = reg.read(attribute_name.to_s)
+        return reg_val
+      rescue Win32::Registry::Error => error
+        trace(:error, "Unable to read value #{attribute_name} of key #{key}")
+        return nil
+      ensure
+        reg.close if reg
+      end
+
       def registry_add(key_path, value_name, value_data)
         value_type = if value_data.kind_of?(Fixnum)
           :REG_DWORD
@@ -150,19 +191,6 @@ module RCS
 
         cmd = "reg add #{winpath(key_path)} /f /t #{value_type} /v #{value_name} /d #{value_data}"
         return localhost? ? local_command(cmd) : request(cmd, exec: 1)
-      end
-
-      def write_file(path, content)
-        if localhost?
-          File.open(unixpath(path), 'wb') { |file| file.write(content) }
-        else
-          # todo
-        end
-      end
-
-      def read_file(path)
-        # This has only the "localhost" version
-        File.read(unixpath(path))
       end
 
       def delete_service(service_name)
@@ -209,10 +237,9 @@ module RCS
         end
       end
 
-      def database_exists?(name, mongo: nil)
-        eval = "f=null; db.adminCommand({listDatabases: 1})['databases'].forEach(function(e){ if (e.name == '#{name}') { f = true } }); if (!f) { throw('not found') }"
-        cmd = "#{winpath(mongo)} 127.0.0.1 --eval \"#{eval}\""
-        return execute(cmd)
+      def database_exists?(name)
+        javascript = "f=null;db.adminCommand({listDatabases:1})['databases'].forEach(function(e){if(e.name=='#{name}'){f=true}});if(!f){throw('notfound')}"
+        return mongo_eval_no_auth_fallback("127.0.0.1:27017", javascript)
       end
 
       def rm_rf(path, allow: [], check: true)
@@ -299,6 +326,7 @@ module RCS
 
       def cp_r(from, to)
         if localhost?
+          return true if unixpath(from) == unixpath(to) and File.exists?(unixpath(from))
           FileUtils.cp_r(unixpath(from), unixpath(to))
         else
           request("ruby -e 'require \"fileutils\"; FileUtils.cp_r(\"#{unixpath(from)}\", \"#{unixpath(to)}\");", exec: 1)

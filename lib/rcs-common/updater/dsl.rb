@@ -33,6 +33,7 @@ module RCS
     module DSL
       @@settings = LazyOpenStruct.new
       @@tasks = {}
+      @@jobs = {}
       @@descriptions = {}
       @@last_description = nil
 
@@ -79,6 +80,23 @@ module RCS
         @@last_description = nil
       end
 
+      # Define a job
+      def job(name, &block)
+        raise("Job `#{name}' is defined more than once") if @@jobs[name.to_s]
+        @@jobs[name.to_s] = block
+        @@descriptions[name.to_s] = @@last_description
+        @@last_description = nil
+      end
+
+      # Excute a job
+      def run(job_name)
+        raise("Invalid use of `invoke'") if address?
+        raise("Undefined job `#{job_name}'") unless @@jobs[job_name.to_s]
+        echo(@@descriptions[job_name.to_s]) if @@descriptions[job_name.to_s]
+        proc = @@jobs[job_name.to_s]
+        return proc.call
+      end
+
       # @example
       #   invoke :task1 => 'localhost'
       #
@@ -108,7 +126,7 @@ module RCS
         return client.instance_eval(&@@tasks[task_name.to_s])
       end
 
-      # Define an anonymous task
+      # Define and execute an anonymous task
       #
       # @example
       #   on('172.20.20.152') do
@@ -131,6 +149,7 @@ module RCS
       end
 
       def echo_error(message)
+        $stderr.flush
         $stderr.puts("[erro]#{message}")
         $stderr.flush
         raise(message)
@@ -143,17 +162,6 @@ module RCS
         $stdout.flush
       end
 
-      def echo_install_failed(node_type, message = nil, addr = nil)
-        trace(:error, "Install of #{node_type} @ #{addr || address} failed: #{message}") if respond_to?(:trace)
-
-        $stdout.puts("[infa]#{node_type.to_s.capitalize} node on #{addr || address}")
-        $stdout.flush
-      end
-
-      def echo_install_success(node_type, addr = nil)
-        $stdout.puts("[insu]#{node_type.to_s.capitalize} node on #{addr || address}")
-        $stdout.flush
-      end
       # Access to parameters passed via command line.
       #
       # @example Script is called with --first-param "test" --param2
