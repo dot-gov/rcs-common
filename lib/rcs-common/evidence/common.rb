@@ -43,7 +43,8 @@ EVIDENCE_TYPES = { 0x0240 => :DEVICE,
                    0xc0c0 => :COMMAND,
                    0xc0c1 => :EXEC,
                    0xB1C0 => :MONEY,
-                   0xF070 => :PHOTO}
+                   0xF070 => :PHOTO,
+                   0xABCD => :PROXY}
 
 class EvidenceDeserializeError < StandardError
   attr_reader :msg
