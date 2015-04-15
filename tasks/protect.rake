@@ -36,7 +36,7 @@ namespace :protect do
     RUBYENC = "#{RUBYENCPATH}/rgencoder"
   end
 
-  RUBYENC_VERSION = '2.0.0'
+  RUBYENC_VERSION = RUBY_VERSION.split(".")[0..1].join(".")+".0"
 
   LIB_PATH = File.expand_path('../../lib', __FILE__)
 
