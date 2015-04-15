@@ -83,6 +83,7 @@ namespace :protect do
   desc "Build and install an encrypted version of rcs-common into system gems"
   task :install do
     FileUtils.rm_rf("#{LIB_PATH}/../pkg")
+    system "gem uninstall rcs-common --force"
     Rake::Task['protect:build'].invoke
     gemfile = Dir["#{LIB_PATH}/../pkg/*.gem"].first
     system("gem install --conservative #{gemfile}")
