@@ -16,9 +16,9 @@ gemspec = Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_dependency("log4r", ">= 1.1.9")
-  s.add_dependency('eventmachine', '= 1.0.3')
-  s.add_dependency('mongoid', '= 4.0.1')
+  s.add_dependency("log4r")
+  s.add_dependency('eventmachine')
+  s.add_dependency('mongoid')
   s.add_dependency('mime-types')
   s.add_dependency('sys-filesystem')
   s.add_dependency('sys-cpu')
