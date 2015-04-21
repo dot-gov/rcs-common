@@ -1,32 +1,5 @@
+require "rcs-common/lazy_open_struct"
 require_relative 'client'
-require 'ostruct'
-
-class LazyOpenStruct < OpenStruct
-  def method_missing(meth, *args)
-    n = meth.to_s
-
-    if n.end_with?("?")
-      n = n[0..-2]
-      return @table[n] || @table[n.to_sym]
-    elsif !n.end_with?("=")
-      raise(NoMethodError, "no `#{meth}' member set yet")
-    end
-
-    super
-  end
-
-  def new_ostruct_member(name)
-    name = name.to_sym
-    unless respond_to?(name)
-      define_singleton_method(name) do
-        value = @table[name]
-        return value.respond_to?(:call) ? value.call : value
-      end
-      define_singleton_method("#{name}=") { |x| modifiable[name] = x }
-    end
-    name
-  end
-end
 
 module RCS
   module Updater
