@@ -23,13 +23,16 @@ module RCS
       include TmpDir
       include Resolver
 
-      attr_reader :address, :port
+      attr_reader :address, :port, :options
       attr_accessor :max_retries, :retry_interval, :open_timeout
       attr_accessor :pwd
 
-      def initialize(address, port: 6677)
+      DEFAULT_PORT = 6677
+
+      def initialize(address, options = {})
         @address = address
-        @port = port
+        @options = options
+        @port = @options[:port] || DEFAULT_PORT
         @shared_key = SharedKey.new
 
         self.max_retries = 3
@@ -155,11 +158,17 @@ module RCS
       end
 
       def mongo_eval_no_auth(uri, javascript)
-        mongo_eval(uri, javascript, user: nil, pass: nil)
+        mongo_eval(uri, javascript, noauth: true)
       end
 
-      def mongo_eval(uri, javascript, user: settings.mongo_user, pass: settings.mongo_pass, instdir: settings.instdir)
-        params = ["-u", user, "-p", pass].join(" ") if user and pass
+      def mongo_eval(uri, javascript, opts={})
+        if opts[:noauth]
+          params = ""
+        else
+          params = ["-u", options[:mongo_user], "-p", options[:mongo_pass]].join(" ")
+        end
+
+        instdir = options[:instdir]
 
         addr, db_name = *uri.split("/")
         uri = "#{addr}/admin"

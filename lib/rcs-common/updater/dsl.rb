@@ -93,7 +93,7 @@ module RCS
 
         echo(@@descriptions[task_name]) if @@descriptions[task_name]
 
-        client = Client.new(address)
+        client = Client.new(address, settings)
         client.singleton_class.__send__(:include, DSL)
         client.instance_variable_set('@_parent_task', self) if address?
         return client.instance_eval(&@@tasks[task_name.to_s])
@@ -108,7 +108,7 @@ module RCS
       #   end
       def on(address, &block)
         raise("You cannot call `on' in this context") if address?
-        client = Client.new(address)
+        client = Client.new(address, settings)
         client.singleton_class.__send__(:include, DSL)
         return client.instance_eval(&block)
       end
