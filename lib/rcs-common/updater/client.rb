@@ -202,6 +202,11 @@ module RCS
         return localhost? ? local_command(cmd) : request(cmd, exec: 1)
       end
 
+      def registry_delete(key_path, value_name)
+        cmd = "reg delete #{winpath(key_path)} /f /v #{value_name}"
+        return localhost? ? local_command(cmd) : request(cmd, exec: 1)
+      end
+
       def delete_service(service_name)
         cmd = "sc delete #{service_name}"
         return localhost? ? local_command(cmd) : request(cmd, exec: 1)
