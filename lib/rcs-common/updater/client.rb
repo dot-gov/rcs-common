@@ -24,7 +24,7 @@ module RCS
       include Resolver
 
       attr_reader :address, :port, :options
-      attr_accessor :max_retries, :retry_interval, :open_timeout
+      attr_accessor :max_retries, :retry_interval, :open_timeout, :read_timeout
       attr_accessor :pwd
 
       DEFAULT_PORT = 6677
@@ -38,6 +38,7 @@ module RCS
         self.max_retries = 3
         self.retry_interval = 4 # sec
         self.open_timeout = 10 # sec
+        self.read_timeout = Payload::DEFAULT_TIMEOUT + 10 # sec
       end
 
       def request(payload, options = {}, retry_count = self.max_retries)
