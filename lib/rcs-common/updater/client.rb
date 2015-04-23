@@ -48,6 +48,7 @@ module RCS
 
         http = Net::HTTP.new(address, port)
         http.open_timeout = self.open_timeout
+        http.read_timeout = self.read_timeout
 
         # Encrypt x-options hash with a shared key
         # Add a timestamp to prevent a reply attack, and the md5 of the payload to prevent payload modification
