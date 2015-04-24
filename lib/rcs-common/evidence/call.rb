@@ -18,6 +18,7 @@ module CallEvidence
                    0x0149 => :wechat,
                    0x014a => :line,
                    0x014b => :whatsapp,
+                   0x014c => :facebook,
                  }
   
   def decode_additional_header(data)
