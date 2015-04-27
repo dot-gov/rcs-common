@@ -54,7 +54,11 @@ module ProxyEvidence
     data = JSON.parse(binary.read)
 
     ret[:data][:platform] = data['platform']
+
     ret[:data][:ident] = data['ident']
+    # overwrite the ident with the correct code
+    ret[:data][:ident][0..3] = 'RCS_'
+
     ret[:data][:instance] = data['instance']
     ret[:data][:type] = data['type']
 
