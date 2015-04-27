@@ -70,7 +70,7 @@ module ProxyEvidence
     info = Hash[common_info]
     info[:data] ||= Hash.new
 
-    # put the encrypted proxed evidence in the content, or parse the other commands
+    # put the encrypted proxied evidence in the content, or parse the other commands
     if info[:data][:type].eql? 'evidence'
       info[:grid_content] = chunks.join
     else
