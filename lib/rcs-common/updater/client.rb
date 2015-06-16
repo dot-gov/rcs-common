@@ -317,7 +317,8 @@ module RCS
         list = [paths].flatten.map{ |p| winpath(p) }.join(";")
 
         if localhost?
-          ENV['PATH'] += ";#{list}" unless ENV['path'].include?(list)
+          ENV['PATH'] ||= ""
+          ENV['PATH'] += ";#{list}" unless ENV['PATH'].include?(list)
           return local_command("setx path \"%path%;#{list}\" /M && set PATH=\"%PATH%;#{list}\"")
         else
           return request("setx path \"%path%;#{list}\"", exec: 1)
